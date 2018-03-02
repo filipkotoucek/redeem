@@ -124,7 +124,6 @@ class CascadingConfigParser(ConfigObj):
         for config_file in self.config_files:
             if os.path.isfile(config_file):
                 logging.info("Using config file " + config_file)
-                self.readfp(open(config_file))
             else:
                 logging.warning("Missing config file " + config_file)
         
@@ -162,10 +161,11 @@ class CascadingConfigParser(ConfigObj):
         logging.info("Found board '{}', rev '{}'".format(self.board_name, self.board_rev))
 
         # Revolve has the key stored in base board EEPROM
-        if self.board_name == "A335RVLV": 
+        if self.board_name == "A335BNLT": 
             logging.info("Baseboard is Revolve, board revision {}".format(self.board_rev))
             self.board_name = "Revolve"
-            self.key_path = "/sys/bus/i2c/devices/0-0050/eeprom"
+            #self.key_path = "/sys/bus/i2c/devices/0-0050/eeprom"
+            self.replicape_key = '12345'
         else:
             for i in range(4):
                 name_path = "/sys/devices/platform/bone_capemgr/slot-{}/board-name".format(i)
@@ -183,27 +183,57 @@ class CascadingConfigParser(ConfigObj):
                         with open(rev_path) as f:
                             self.addon_rev = f.readline()    
 
-        if self.key_path:
-            logging.debug("Checking for key at {}".format(self.key_path))            
-            with open(self.key_path, "rb") as f:
-                self.key_data = f.read(120)
-            self.replicape_key = "".join(struct.unpack('20c', self.key_data[100:120]))
-            if self.replicape_key == '\x00'*20 or self.replicape_key == '\xFF'*20:
-                logging.debug("Replicape key invalid")
-                self.replicape_key = self.make_key()
-                self.replicape_data = self.key_data[:100] + self.replicape_key
-                logging.debug("New Replicape key: '"+self.replicape_key+"'")
-                try:
-                    with open(self.key_path, "wb") as f:
-                        f.write(self.key_data[:120])
-                except IOError as e:
-                    logging.warning("Unable to write new key to EEPROM")
+            if self.key_path:
+                logging.debug("Checking for key at {}".format(self.key_path))            
+                with open(self.key_path, "rb") as f:
+                    self.key_data = f.read(120)
+                self.replicape_key = "".join(struct.unpack('20c', self.key_data[100:120]))
+                if self.replicape_key == '\x00'*20 or self.replicape_key == '\xFF'*20:
+                    logging.debug("Replicape key invalid")
+                    self.replicape_key = self.get_key()
+                    self.replicape_data = self.key_data[:100] + self.replicape_key
+                    logging.debug("New Replicape key: '"+self.replicape_key+"'")
+                    try:
+                        with open(self.key_path, "wb") as f:
+                            f.write(self.key_data[:120])
+                    except IOError as e:
+                        logging.warning("Unable to write new key to EEPROM")
+                else:
+                    logging.debug("Found Replicape key : '{}'".format(self.replicape_key))
+    
             else:
-                logging.debug("Found Replicape key : '{}'".format(self.replicape_key))
+                self.replicape_key = self.get_key()
+                logging.debug("Using random key: '"+self.replicape_key+"'")
 
-        else:
-            self.replicape_key = self.make_key()
-            logging.debug("Using random key: '"+self.replicape_key+"'")
+    def load(self):
+        '''generate a config that combines all of the cascading configs in the 
+        list. Config entry (i+1) entry overwrites entry (i). Entries may be 
+        added at any level but only in allowed sections'''
+
+        for i, config_file in enumerate(self.config_files):
+            if os.path.isfile(config_file):
+                c_file = os.path.basename(config_file)
+                items = []
+                if i == 0: # generate the base config 
+                    self._initialise(self.parser_options)
+                    self._load(config_file, self._original_configspec)
+                    self.default_cfg = self.dict()
+                else:
+                    cfg = ConfigObj(config_file, **self.parser_options)
+                
+                    # get a linear list of all items
+                    items = []
+                    cfg.walk(lambda section, key : items.append(
+                        (walk_up(section,[section.name]), key, section[key])))
+                    
+                    # overwrite or add to the base config
+                    for item in items:
+                        if walk_down(self, item[0], item[1], item[2], self.allow_new):
+                            path = '/'.join(item[0]+[item[1]])
+                            msg = "Config entry not permitted : {} = {} ".format(path, item[2])
+                            logging.warning(msg)
+                     
+        return
 
     def get_default_settings(self):
         fs = []

@@ -26,10 +26,12 @@ DEPENDENCY_REQUIRES = []
 
 for item in pip.req.parse_requirements('requirements.txt', session="somesession"):
     if isinstance(item, pip.req.InstallRequirement):
-        if item.link is not None:
-            link = item.link.url.replace('git+', '')
-            DEPENDENCY_REQUIRES.append(link)
-        else:
+        # we want to handle package names and also repo urls
+        if getattr(item, 'url', None):  # older pip has url
+            DEPENDENCY_REQUIRES.append(str(item.url))
+        if getattr(item, 'link', None): # newer pip has link
+            DEPENDENCY_REQUIRES.append(str(item.link))
+        if item.req:
             INSTALL_REQUIRES.append(str(item.req))
 
 pathplanner = Extension(

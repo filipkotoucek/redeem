@@ -352,8 +352,7 @@ class TMC2130(Stepper):
         ret += "----------------------\n"
         return ret
 
-    def set_microstepping(self, value, force_update=False):
-        logging.debug("")       
+    def set_microstepping(self, value, force_update=False):       
         if value == 1:
             self.mres = 8
         elif value == 2:
@@ -422,17 +421,24 @@ class TMC2130(Stepper):
         self.regs[addr] = val
 
     def write(self, addr):
+        #if stepper is assigned to actual SPI add it to the list
         steppers = [s for s in Stepper.printer.steppers_ordered if s.spi == self.spi]
-        steppers.reverse()
-        to_send = [item for sublist in [s.get_write_reg(addr) for s in steppers] for item in sublist]
+        #switch the order of steppers ???
+        #steppers.reverse()
+        to_send = []
+        for s in steppers: #make list with commands for all steppers
+            to_send.extend(s.get_write_reg(addr))
+        
         status = self.spi.xfer(to_send)
         for index, stepper in enumerate(steppers):
             stepper.update_status(status[index*5])
 
     def read(self, addr):
         steppers = [s for s in Stepper.printer.steppers_ordered if s.spi == self.spi]
-        steppers.reverse()
-        to_send = [item for sublist in [s.get_read_reg(addr) for s in steppers] for item in sublist]
+        #steppers.reverse()
+        to_send = []
+        for s in steppers: #make list with commands for all steppers
+            to_send.extend(s.get_read_reg(addr))
         # Twice, see the datasheet
         status = self.spi.xfer(to_send)
         status = self.spi.xfer(to_send)

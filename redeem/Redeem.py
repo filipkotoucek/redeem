@@ -23,6 +23,9 @@ License: GNU GPL v3: http://www.gnu.org/copyleft/gpl.html
  along with Redeem.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import pydevd
+pydevd.settrace('192.168.7.1')
+
 import glob
 import logging
 import logging.handlers
@@ -49,7 +52,7 @@ from USB import USB
 from Pipe import Pipe
 from Ethernet import Ethernet
 from Extruder import Extruder, HBP
-from Cooler import Cooler
+#from Cooler import Cooler
 from Path import Path
 from PathPlanner import PathPlanner
 from Gcode import Gcode
@@ -153,7 +156,7 @@ class Redeem:
 
         printer.firmware_version = firmware_version
 
-        printer.config_location = self.config_location
+        printer.config_location = "/etc/redeem"
 
         # Set up and Test the alarm framework
         Alarm.printer = self.printer
@@ -164,26 +167,28 @@ class Redeem:
         printer.config = CascadingConfigParser(configs, 
                                                allow_new = ["Temperature Control"]) # <-- this is where users are allowed to add stuff to the config 
 
-        if not self.logging:
-            # Get the revision and loglevel from the Config file
-            level = self.printer.config.getint('System', 'loglevel')
-            if level > 0:
-                logging.getLogger().setLevel(level)
-    
-            # Set up additional logging, if present:
-            if self.printer.config.getboolean('System', 'log_to_file'):
-                logfile = self.printer.config.get('System', 'logfile')
-                formatter = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
-                printer.redeem_logging_handler = logging.handlers.RotatingFileHandler(logfile, maxBytes=2*1024*1024)
-                printer.redeem_logging_handler.setFormatter(logging.Formatter(formatter))
-                printer.redeem_logging_handler.setLevel(level)
-                logging.getLogger().addHandler(printer.redeem_logging_handler)
-                logging.info("-- Logfile configured --")
-            
-            self.logging = True
+        #if not self.logging:
+        # Get the revision and loglevel from the Config file
+        level = self.printer.config.getint('System', 'loglevel')
+        if level > 0:
+            logging.getLogger().setLevel(level)
 
+        # Set up additional logging, if present:
+        if self.printer.config.getboolean('System', 'log_to_file'):
+            logfile = self.printer.config.get('System', 'logfile')
+            formatter = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
+            printer.redeem_logging_handler = logging.handlers.RotatingFileHandler(logfile, maxBytes=2*1024*1024)
+            printer.redeem_logging_handler.setFormatter(logging.Formatter(formatter))
+            printer.redeem_logging_handler.setLevel(level)
+            logging.getLogger().addHandler(printer.redeem_logging_handler)
+            logging.info("-- Logfile configured --")
+        
+        self.logging = True
+        
+        
         # Find out which capes are connected
         self.printer.config.parse_capes()
+        '''
         self.revision = self.printer.config.replicape_revision
         if self.revision:
             logging.info("Found Replicape rev. " + self.revision)
@@ -199,10 +204,11 @@ class Redeem:
             Printer.NUM_AXES = 8
         elif self.printer.config.reach_revision == "00B0":
             Printer.NUM_AXES = 7
-
+        '''
+        
         # Init basic stuff by platform
         if printer.config.board_name == "Revolve":
-            Printer.NUM_AXES = 6
+            Printer.NUM_AXES = 4
             printer.enable = Enable("gpio18", False)
         elif printer.config.cape_name == "Replicape":
             Printer.NUM_AXES = 5
@@ -220,9 +226,11 @@ class Redeem:
         # Init the Watchdog timer
         printer.watchdog = Watchdog()
 
+        '''
         # Enable PWM and steppers
         printer.enable = Enable("P9_41")
         printer.enable.set_disabled()
+        '''
 
         # Init the Paths
         printer.axis_config = printer.config.getint('Geometry', 'axis_config')
@@ -291,20 +299,20 @@ class Redeem:
         # Revolve
         elif printer.config.board_name == "Revolve":
             import spidev
-            spi_0_0 = spidev.SpiDev()
-            spi_0_0.open(0, 0)
-            Stepper.printer = printer
+            #spi_0_0 = spidev.SpiDev()
+            #spi_0_0.open(0, 0)
+            #Stepper.printer = printer
             spi_1_0 = spidev.SpiDev()
             spi_1_0.open(1, 0)
-            spi_1_1 = spidev.SpiDev()
-            spi_1_1.open(1, 1)
+            #spi_1_1 = spidev.SpiDev()
+            #spi_1_1.open(1, 1)
 
             # Append in right order.         
-            for name in ["XYZEHA"]:
-                step_pin  = printer.config.get('Steppers', 'step_pin_' + name)
-                dir_pin   = printer.config.get('Steppers', 'dir_pin_' + name)
-                fault_pin = printer.config.get('Steppers', 'fault_pin_' + name)
-                printer.add_stepper(TMC2130(step_pin, dir_pin, fault_pin, name, spi_0_0))              
+            for name in "XYZE": #"XYZEHA"
+                step_pin  = printer.config.get('Steppers', 'step_pin_' + name.lower())
+                dir_pin   = printer.config.get('Steppers', 'dir_pin_' + name.lower())
+                fault_pin = printer.config.get('Steppers', 'fault_pin_' + name.lower())
+                printer.add_stepper(TMC2130(step_pin, dir_pin, fault_pin, name, spi_1_0))              
 
             
             for i in printer.steppers:

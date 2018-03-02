@@ -30,7 +30,7 @@ from threading import Thread
 
 from TemperatureControl import Unit, ConstantControl
 
-class Fan(PWM):
+#class Fan(PWM):
 
 class Fan(Unit):
     """
