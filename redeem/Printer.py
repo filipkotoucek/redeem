@@ -113,7 +113,7 @@ class Printer:
         self.sd_card_manager = SDCardManager()
 
     def add_stepper(self, stepper):
-        self.steppers[stepper.name] = stepper
+        self.steppers[stepper.name.upper()] = stepper
         self.steppers_ordered.append(stepper)
 
     def add_slave(self, master, slave):

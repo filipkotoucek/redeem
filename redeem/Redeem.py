@@ -164,8 +164,7 @@ class Redeem:
         alarm = Alarm(Alarm.ALARM_TEST, "Alarm framework operational")
         
         # Parse the config files.
-        printer.config = CascadingConfigParser(configs, 
-                                               allow_new = ["Temperature Control"]) # <-- this is where users are allowed to add stuff to the config 
+        printer.config = CascadingConfigParser(configs, allow_new = ["Temperature Control"]) # <-- this is where users are allowed to add stuff to the config 
 
         #if not self.logging:
         # Get the revision and loglevel from the Config file
@@ -207,9 +206,15 @@ class Redeem:
         '''
         
         # Init basic stuff by platform
-        if printer.config.board_name == "Revolve":
+        if printer.config.board_name == "Prusa Pro":
             Printer.NUM_AXES = 4
+            printer.config.reach_revision = "00A0"
+            
+        elif printer.config.board_name == "Revolve":
+            Printer.NUM_AXES = 4
+            printer.config.reach_revision = "00A0"
             printer.enable = Enable("gpio18", False)
+        
         elif printer.config.cape_name == "Replicape":
             Printer.NUM_AXES = 5
             printer.enable = Enable("P9_41", True)
@@ -217,11 +222,11 @@ class Redeem:
                 PWM.set_frequency(250)
             elif printer.config.cape_rev in ["00A4", "0A4A", "00A3"]:
                 PWM.set_frequency(100)
-        if printer.config.addon_name == "Reach":
-            if printer.config.addon_rev == "00A0":
-                Printer.NUM_AXES = 8
-            elif printer.config.addon_rev == "00B0":
-                Printer.NUM_AXES = 7
+            if printer.config.addon_name == "Reach":
+                if printer.config.addon_rev == "00A0":
+                    Printer.NUM_AXES = 8
+                elif printer.config.addon_rev == "00B0":
+                    Printer.NUM_AXES = 7
 
         # Init the Watchdog timer
         printer.watchdog = Watchdog()
@@ -254,7 +259,28 @@ class Redeem:
 
         # Init the 5 Stepper motors (step, dir, fault, DAC channel, name)
         Stepper.printer = printer
-        if printer.config.cape_name == "Replicape":
+        
+        # Prusa Pro Einsy
+        if printer.config.board_name == "Prusa Pro":
+            import spidev
+            spi_1_0 = spidev.SpiDev()
+            spi_1_0.open(1, 0)
+
+            # Append in right order.
+            #TODO rewrite appending of steppers according to cfg         
+            for name in "XYZE": #["XYZEHA"]
+                step_pin  = printer.config.get('Steppers', 'step_pin_' + name.lower())
+                dir_pin   = printer.config.get('Steppers', 'dir_pin_' + name.lower())
+                fault_pin = printer.config.get('Steppers', 'fault_pin_' + name.lower())
+                printer.add_stepper(TMC2130(step_pin, dir_pin, fault_pin, name, spi_1_0))              
+
+            
+            for i in printer.steppers:
+                s = Stepper.printer.steppers[i]
+                s.update()
+                #s.get_diagnostics()
+                
+        elif printer.config.cape_name == "Replicape":
             if printer.config.cape_rev in ["00B3", "0B3A"]:
                 printer.steppers["X"] = Stepper_00B3("GPIO0_27", "GPIO1_29", 90, 11, 0, "X")
                 printer.steppers["Y"] = Stepper_00B3("GPIO1_12", "GPIO0_22", 91, 12, 1, "Y")
@@ -296,45 +322,21 @@ class Redeem:
                     printer.steppers["B"] = Stepper_reach_00A4("GPIO1_16", "GPIO0_5" , "GPIO0_14", 6, 6, "B")
                     printer.steppers["C"] = Stepper_reach_00A4("GPIO0_3" , "GPIO3_19", "GPIO0_14", 7, 7, "C")
 
-        # Revolve
-        elif printer.config.board_name == "Revolve":
-            import spidev
-            #spi_0_0 = spidev.SpiDev()
-            #spi_0_0.open(0, 0)
-            #Stepper.printer = printer
-            spi_1_0 = spidev.SpiDev()
-            spi_1_0.open(1, 0)
-            #spi_1_1 = spidev.SpiDev()
-            #spi_1_1.open(1, 1)
-
-            # Append in right order.         
-            for name in "XYZE": #"XYZEHA"
-                step_pin  = printer.config.get('Steppers', 'step_pin_' + name.lower())
-                dir_pin   = printer.config.get('Steppers', 'dir_pin_' + name.lower())
-                fault_pin = printer.config.get('Steppers', 'fault_pin_' + name.lower())
-                printer.add_stepper(TMC2130(step_pin, dir_pin, fault_pin, name, spi_1_0))              
-
-            
-            for i in printer.steppers:
-                s = Stepper.printer.steppers[i]
-                s.update()
-                #s.get_diagnostics()
-
 
         # Enable the steppers and set the current, steps pr mm and
         # microstepping
         for name, stepper in self.printer.steppers.iteritems():
-            stepper.in_use = printer.config.getboolean('Steppers', 'in_use_' + name)
-            stepper.direction = printer.config.getint('Steppers', 'direction_' + name)
-            stepper.has_endstop = printer.config.getboolean('Endstops', 'has_' + name)
-            stepper.set_current_value(printer.config.getfloat('Steppers', 'current_' + name))
-            stepper.set_steps_pr_mm(printer.config.getfloat('Steppers', 'steps_pr_mm_' + name))
-            stepper.set_microstepping(printer.config.getint('Steppers', 'microstepping_' + name))
-            stepper.set_decay(printer.config.getint("Steppers", "slow_decay_" + name))
+            stepper.in_use = printer.config.getboolean('Steppers', 'in_use_' + name.lower())
+            stepper.direction = printer.config.getint('Steppers', 'direction_' + name.lower())
+            stepper.has_endstop = printer.config.getboolean('Endstops', 'has_' + name.lower())
+            stepper.set_current_value(printer.config.getfloat('Steppers', 'current_' + name.lower()))
+            stepper.set_steps_pr_mm(printer.config.getfloat('Steppers', 'steps_pr_mm_' + name.lower()))
+            stepper.set_microstepping(printer.config.getint('Steppers', 'microstepping_' + name.lower()))
+            stepper.set_decay(printer.config.getint("Steppers", "slow_decay_" + name.lower()))
             # Add soft end stops
-            printer.soft_min[Printer.axis_to_index(name)] = printer.config.getfloat('Endstops', 'soft_end_stop_min_' + name)
-            printer.soft_max[Printer.axis_to_index(name)] = printer.config.getfloat('Endstops', 'soft_end_stop_max_' + name)
-            slave = printer.config.get('Steppers', 'slave_' + name)
+            printer.soft_min[Printer.axis_to_index(name)] = printer.config.getfloat('Endstops', 'soft_end_stop_min_' + name.lower())
+            printer.soft_max[Printer.axis_to_index(name)] = printer.config.getfloat('Endstops', 'soft_end_stop_max_' + name.lower())
+            slave = printer.config.get('Steppers', 'slave_' + name.lower())
             if slave:
                 printer.add_slave(name, slave)
                 logging.debug("Axis "+name+" has slave "+slave)
@@ -352,40 +354,40 @@ class Redeem:
                 
         #######################################################################
         # TEMPERATURE CONTROL
-	if printer.config.board_name == "Revolve":
-            self.printer.spi_0_1 = spidev.SpiDev()
-            self.printer.spi_0_1.open(0, 1)
-            self.printer.spi_0_1.xfer([0x00])
+	#if printer.config.board_name == "Revolve":
+            #self.printer.spi_0_1 = spidev.SpiDev()
+            #self.printer.spi_0_1.open(0, 1)
+            #self.printer.spi_0_1.xfer([0x00])
             #self.printer.shiftreg = ShiftRegister(self.printer.spi_0_1)
  	    # Init the three fans. Argument is PWM channel number
-            self.printer.fans.append(Fan_Pin(0, 0, self.printer.config.getfloat('Fans', "fan_0_max_value")))
-            self.printer.fans.append(Fan_Pin(0, 1, self.printer.config.getfloat('Fans', "fan_1_max_value")))
-            self.printer.fans.append(Fan_Pin(2, 0, self.printer.config.getfloat('Fans', "fan_2_max_value")))
-            self.printer.fans.append(Fan_Pin(2, 1, self.printer.config.getfloat('Fans', "fan_3_max_value")))
+            #self.printer.fans.append(Fan_Pin(0, 0, self.printer.config.getfloat('Fans', "fan_0_max_value")))
+            #self.printer.fans.append(Fan_Pin(0, 1, self.printer.config.getfloat('Fans', "fan_1_max_value")))
+            #self.printer.fans.append(Fan_Pin(2, 0, self.printer.config.getfloat('Fans', "fan_2_max_value")))
+            #self.printer.fans.append(Fan_Pin(2, 1, self.printer.config.getfloat('Fans', "fan_3_max_value")))
 
 	# Discover and add all DS18B20 cold ends.
-        paths = glob.glob("/sys/bus/w1/devices/28-*/w1_slave")
-        logging.debug("Found cold ends: "+str(paths))
-        for i, path in enumerate(paths):
-            self.printer.cold_ends.append(ColdEnd(path, "ds18b20-"+str(i)))
-            logging.info("Found Cold end "+str(i)+" on " + path)
+        #paths = glob.glob("/sys/bus/w1/devices/28-*/w1_slave")
+        #logging.debug("Found cold ends: "+str(paths))
+        #for i, path in enumerate(paths):
+        #    self.printer.cold_ends.append(ColdEnd(path, "ds18b20-"+str(i)))
+        #    logging.info("Found Cold end "+str(i)+" on " + path)
             
 	
            
         # update the channel information for fans
-        if printer.config.board_name == "Replicape":
-	    if self.revision == "00A3":
-	        self.printer.fans = [None]*3
-	        for i, c in enumerate([0,1,2]):
-		    self.printer.config["Fans"]["Fan-{}".format(i)]["channel"] = c
-	    elif self.revision == "0A4A":
-	        self.printer.fans = [None]*3
-	        for i, c in enumerate([8,9,10]):
-		    self.printer.config["Fans"]["Fan-{}".format(i)]["channel"] = c
-	    elif self.revision in ["00B1", "00B2", "00B3", "0B3A"]:
-	        self.printer.fans = [None]*4
-	        for i, c in enumerate([7,8,9,10]):
-		    self.printer.config["Fans"]["Fan-{}".format(i)]["channel"] = c
+        #if printer.config.board_name == "Replicape":
+	    #if self.revision == "00A3":
+	    #    self.printer.fans = [None]*3
+	    #    for i, c in enumerate([0,1,2]):
+		#    self.printer.config["Fans"]["Fan-{}".format(i)]["channel"] = c
+	    #elif self.revision == "0A4A":
+	    #    self.printer.fans = [None]*3
+	    #    for i, c in enumerate([8,9,10]):
+		#    self.printer.config["Fans"]["Fan-{}".format(i)]["channel"] = c
+	    #elif self.revision in ["00B1", "00B2", "00B3", "0B3A"]:
+	    #    self.printer.fans = [None]*4
+	    #    for i, c in enumerate([7,8,9,10]):
+		#    self.printer.config["Fans"]["Fan-{}".format(i)]["channel"] = c
 	if printer.config.reach_revision == "00A0":
 	    self.printer.fans = [None]*3
 	    for i, c in enumerate([14,15,7]):
@@ -394,7 +396,7 @@ class Redeem:
         # define the inputs/outputs available on this board
         # also define those that are NOT available (for later use)
         exclude = []
-        heaters = ["E", "H", "HBP"]
+        heaters = ["e", "h"]
         extra = ["A", "B", "C"]
         if self.printer.config.reach_revision:
             heaters.extend(extra)

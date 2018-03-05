@@ -23,6 +23,7 @@ import os
 import logging
 import struct
 import copy
+from fileinput import close
 
 #==============================================================================
 # Functions
@@ -161,11 +162,11 @@ class CascadingConfigParser(ConfigObj):
         logging.info("Found board '{}', rev '{}'".format(self.board_name, self.board_rev))
 
         # Revolve has the key stored in base board EEPROM
+        #TODO create dtb and modify uboot
         if self.board_name == "A335BNLT": 
-            logging.info("Baseboard is Revolve, board revision {}".format(self.board_rev))
-            self.board_name = "Revolve"
+            logging.info("Baseboard is Prusa Pro, board revision {}".format(self.board_rev))
+            self.board_name = "Prusa Pro"
             #self.key_path = "/sys/bus/i2c/devices/0-0050/eeprom"
-            self.replicape_key = '12345'
         else:
             for i in range(4):
                 name_path = "/sys/devices/platform/bone_capemgr/slot-{}/board-name".format(i)
@@ -183,27 +184,15 @@ class CascadingConfigParser(ConfigObj):
                         with open(rev_path) as f:
                             self.addon_rev = f.readline()    
 
-            if self.key_path:
-                logging.debug("Checking for key at {}".format(self.key_path))            
-                with open(self.key_path, "rb") as f:
-                    self.key_data = f.read(120)
-                self.replicape_key = "".join(struct.unpack('20c', self.key_data[100:120]))
-                if self.replicape_key == '\x00'*20 or self.replicape_key == '\xFF'*20:
-                    logging.debug("Replicape key invalid")
-                    self.replicape_key = self.get_key()
-                    self.replicape_data = self.key_data[:100] + self.replicape_key
-                    logging.debug("New Replicape key: '"+self.replicape_key+"'")
-                    try:
-                        with open(self.key_path, "wb") as f:
-                            f.write(self.key_data[:120])
-                    except IOError as e:
-                        logging.warning("Unable to write new key to EEPROM")
-                else:
-                    logging.debug("Found Replicape key : '{}'".format(self.replicape_key))
-    
-            else:
-                self.replicape_key = self.get_key()
-                logging.debug("Using random key: '"+self.replicape_key+"'")
+        if self.key_path:
+            logging.debug("Checking for key at {}".format(self.key_path))            
+            self.replicape_key = self.get_key(self.key_path)
+            logging.debug("Found Replicape key : '{}'".format(self.replicape_key))
+
+        else:
+            #self.replicape_key = self.get_key()
+            self.replicape_key = ''
+            logging.debug("Not using replicape key")
 
     def load(self):
         '''generate a config that combines all of the cascading configs in the 
@@ -309,24 +298,29 @@ class CascadingConfigParser(ConfigObj):
             logging.warning("{} contains errors.".format(filename))
         return local_ok
 
-    def get_key(self):
+    def get_key(self, key_path):
         """ Get the generated key from the config or create one """
-        self.replicape_key = "".join(struct.unpack('20c', self.replicape_data[100:120]))
-        logging.debug("Found Replicape key: '"+self.replicape_key+"'")
-        if self.replicape_key == '\x00'*20:
+        with open(key_path, "rb") as f:
+            self.key_data =  f.read(120)
+            
+        self.key = "".join(struct.unpack('20c', self.key_data[100:120]))
+        logging.debug("Found Replicape key: '"+self.key+"'")
+        if (self.key == '\x00'*20) or (self.key == '\xff'*20):
             logging.debug("Replicape key invalid")
             import random
             import string
-            self.replicape_key = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(20))
-            self.replicape_data = self.replicape_data[:100] + self.replicape_key
-            logging.debug("New Replicape key: '"+self.replicape_key+"'")
+            self.key = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(20))
+            self.replicape_data = self.key_data[:100] + self.key
+            logging.debug("New Replicape key: '"+self.key+"'")
             #logging.debug("".join(struct.unpack('20c', self.new_replicape_data[100:120])))
             try:
-                with open(self.replicape_path, "wb") as f:
+                with open(key_path, "wb") as f:
                     f.write(self.replicape_data[:120])
             except IOError as e:
                 logging.warning("Unable to write new key to EEPROM")
-        return self.replicape_key
+                
+        close(key_path)
+        return self.key
         
     def getint(self, *path):
         ''' get integer '''
