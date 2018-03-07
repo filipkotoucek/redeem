@@ -166,6 +166,11 @@ class CascadingConfigParser(ConfigObj):
             logging.info("Baseboard is Revolve, board revision {}".format(self.board_rev))
             self.board_name = "Revolve"
             self.key_path = "/sys/bus/i2c/devices/0-0050/eeprom"
+        #TODO create dtb and modify uboot
+        elif self.board_name == "A335BNLT": 
+            logging.info("Baseboard is Prusa Pro, board revision {}".format(self.board_rev))
+            self.board_name = "Prusa Pro"
+            #self.key_path = "/sys/bus/i2c/devices/0-0050/eeprom"
         else:
             for i in range(4):
                 name_path = "/sys/devices/platform/bone_capemgr/slot-{}/board-name".format(i)

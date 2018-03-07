@@ -23,6 +23,10 @@ License: GNU GPL v3: http://www.gnu.org/copyleft/gpl.html
  along with Redeem.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import pydevd
+from _curses import error
+pydevd.settrace('192.168.7.1')
+
 import glob
 import logging
 import logging.handlers
@@ -36,7 +40,7 @@ import Queue
 import numpy as np
 import sys, traceback
 
-from Mosfet import Mosfet
+from    Mosfet import Mosfet
 from Stepper import *
 from Stepper_TMC2130 import TMC2130
 from TemperatureSensor import *
@@ -49,7 +53,7 @@ from USB import USB
 from Pipe import Pipe
 from Ethernet import Ethernet
 from Extruder import Extruder, HBP
-from Cooler import Cooler
+#from Cooler import Cooler
 from Path import Path
 from PathPlanner import PathPlanner
 from Gcode import Gcode
@@ -105,8 +109,8 @@ class Redeem:
             
         
         configs = [os.path.join(config_location,'default.cfg'),
-                   os.path.join(config_location,'revolve_00A0.cfg'),
-                   os.path.join(config_location,'printer.cfg'),
+                   os.path.join(config_location,'prusa_pro.cfg'),
+                   #os.path.join(config_location,'printer.cfg'),
                    os.path.join(config_location,'local.cfg')]
                    
         self.config_error = []
@@ -184,6 +188,10 @@ class Redeem:
                 PWM.set_frequency(250)
             elif printer.config.cape_rev in ["00A4", "0A4A", "00A3"]:
                 PWM.set_frequency(100)
+        #TODO edit config to contain info such as axis number
+        elif printer.config.board_name == "Prusa Pro":
+            Printer.NUM_AXES = 4
+            #printer.enable = Enable("gpio18", False)
         if printer.config.addon_name == "Reach":
             if printer.config.addon_rev == "00A0":
                 Printer.NUM_AXES = 8
@@ -194,8 +202,12 @@ class Redeem:
         printer.watchdog = Watchdog()
 
         # Enable PWM and steppers
-        printer.enable.set_disabled()
-
+        try:
+            printer.enable
+            printer.enable.set_disabled()
+        except AttributeError:
+            logging.warning("Enable pin error: %s" % AttributeError)
+            
         # Init the Paths
         printer.axis_config = printer.config.getint('Geometry', 'axis_config')
 
@@ -218,6 +230,7 @@ class Redeem:
 
         # Init the 5 Stepper motors (step, dir, fault, DAC channel, name)
         Stepper.printer = printer
+        
         if printer.config.cape_name == "Replicape":
             if printer.config.cape_rev in ["00B3", "0B3A"]:
                 printer.steppers["X"] = Stepper_00B3("GPIO0_27", "GPIO1_29", 90, 11, 0, "X")
@@ -265,7 +278,6 @@ class Redeem:
             import spidev
             spi_0_0 = spidev.SpiDev()
             spi_0_0.open(0, 0)
-            Stepper.printer = printer
             spi_1_0 = spidev.SpiDev()
             spi_1_0.open(1, 0)
             spi_1_1 = spidev.SpiDev()
@@ -302,6 +314,42 @@ class Redeem:
                 #s.get_diagnostics()
 
 
+        # Prusa Pro
+        elif printer.config.board_name == "Prusa Pro":
+            import spidev
+            spi_1_0 = spidev.SpiDev()
+            spi_1_0.open(1, 0)
+    
+            cfg = self.printer.config["Steppers"]
+
+            for name, options in cfg.items():
+                #logging.debug("{} - {}".format(name,options))
+                if not isinstance(options, Section):
+                    continue
+                e = name.split('-')[-1]
+                #if e in exclude:
+                #    continue
+                    
+                step_pin  = options["step_pin"]
+                dir_pin   = options["dir_pin"]
+                fault_pin = options["fault_pin"]
+                index     = int(options["spi_index"])
+                axis      = options["axis"]
+                printer.add_stepper_with_index(TMC2130(step_pin, dir_pin, fault_pin, axis, spi_1_0), index)
+
+
+            # Append in right order.
+            #for name in "XYZEHA":
+            #    step_pin  = printer.config.get('Steppers', 'step_pin_' + name)
+            #    dir_pin   = printer.config.get('Steppers', 'dir_pin_' + name)
+            #    fault_pin = printer.config.get('Steppers', 'fault_pin_' + name)
+            #    printer.add_stepper(TMC2130(step_pin, dir_pin, fault_pin, name, spi_0_0))              
+
+            for i in printer.steppers:
+                s = Stepper.printer.steppers[i]
+                s.update()
+                #s.get_diagnostics()
+
         # Enable the steppers and set the current, steps pr mm and
         # microstepping
         for name, stepper in self.printer.steppers.iteritems():
@@ -323,8 +371,6 @@ class Redeem:
 
         # Commit changes for the Steppers
         #Stepper.commit()
-
-        Stepper.printer = printer
 
         # Delta printer setup
         if printer.axis_config == Printer.AXIS_CONFIG_DELTA:
@@ -349,7 +395,12 @@ class Redeem:
             self.printer.fans = [None]*4
             for i, c in enumerate([0,1,2,3]):
                 self.printer.config["Fans"]["Fan-{}".format(i)]["channel"] = c
-
+        '''        
+        elif printer.config.board_name == "Prusa Pro":
+            self.printer.fans = [None]*2
+            for i, c in enumerate([0,1]):
+                self.printer.config["Fans"]["Fan-{}".format(i)]["channel"] = c
+        '''
         # Discover and add all DS18B20 cold ends.
         paths = glob.glob("/sys/bus/w1/devices/28-*/w1_slave")
         logging.debug("Found cold ends: "+str(paths))
@@ -380,8 +431,8 @@ class Redeem:
         # define the inputs/outputs available on this board
         # also define those that are NOT available (for later use)
         exclude = []
-        heaters = ["E", "H", "HBP"]
-        extra = ["A", "B", "C"]
+        heaters = ["E", "H"]
+        extra = ["A", "B", "C", "HBP", '2', '3']
         if printer.config.addon_rev == "00A0":
             heaters.extend(extra)
         else:
@@ -389,6 +440,7 @@ class Redeem:
         
 
         # Make Mosfets and thermistors
+        
         for e in heaters:
             # Thermistors
             name = "Thermistor-{}".format(e)
@@ -400,10 +452,11 @@ class Redeem:
             # Mosfets
             name = "Heater-{}".format(e)
             channel = self.printer.config.get("Heaters", name, "mosfet")
-            if printer.config.board_name == "Revolve":
+            if (printer.config.board_name == "Revolve") or (printer.config.board_name == "Prusa Pro"):
                 self.printer.mosfets[e] = Mosfet(channel, "AM335")
             else:
                 self.printer.mosfets[e] = Mosfet(channel, "PCA9685")
+        
         # Make Mosfets and thermistors
         #for e in heaters:
             # Mosfets

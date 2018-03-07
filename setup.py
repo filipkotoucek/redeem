@@ -58,7 +58,8 @@ pathplanner = Extension(
         '-DBUILD_PYTHON_EXT=1',
         '-Wno-write-strings',
         '-Wno-maybe-uninitialized',
-        '-DLOGLEVEL=30']
+        '-DDEBUG=1',
+        '-DLOGLEVEL=10']
 )
 
 from redeem._version import __version__, __url__

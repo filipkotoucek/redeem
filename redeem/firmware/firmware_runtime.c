@@ -118,7 +118,9 @@ int main(void) {
 				STEPPER_Y_DIR_BANK |= ((direction >> 1) & 0x01) << STEPPER_Y_DIR_PIN;
 				STEPPER_Z_DIR_BANK |= ((direction >> 2) & 0x01) << STEPPER_Z_DIR_PIN;
 				STEPPER_E_DIR_BANK |= ((direction >> 3) & 0x01) << STEPPER_E_DIR_PIN;
+    #ifdef STEPPER_H_DIR_BANK
 				STEPPER_H_DIR_BANK |= ((direction >> 4) & 0x01) << STEPPER_H_DIR_PIN;
+    #endif
 	#ifdef STEPPER_A_DIR_BANK
 				STEPPER_A_DIR_BANK |= ((direction >> 5) & 0x01) << STEPPER_A_DIR_PIN;
 	#endif
@@ -193,7 +195,9 @@ int main(void) {
 				STEPPER_Y_STEP_BANK |= ((steps >> 1) & 0x01) << STEPPER_Y_STEP_PIN;
 				STEPPER_Z_STEP_BANK |= ((steps >> 2) & 0x01) << STEPPER_Z_STEP_PIN;
 				STEPPER_E_STEP_BANK |= ((steps >> 3) & 0x01) << STEPPER_E_STEP_PIN;
+    #ifdef STEPPER_H_DIR_BANK
 				STEPPER_H_STEP_BANK |= ((steps >> 4) & 0x01) << STEPPER_H_STEP_PIN;
+    #endif
 	#ifdef STEPPER_A_STEP_BANK
 				STEPPER_A_STEP_BANK |= ((steps >> 5) & 0x01) << STEPPER_A_STEP_PIN;
 	#endif

@@ -36,8 +36,6 @@ class Fan(Unit):
     """
     Used to move air
     """
-    AM335 = 0
-    PCA9685 = 1
 
     def __init__(self, name, options, printer):
         """
@@ -52,16 +50,18 @@ class Fan(Unit):
         if "input" in self.options:
             self.input = self.options["input"]
             
-        self.channel = int(self.options["channel"])
+        self.channel = self.options["channel"]
         logging.debug(options)
-        # get fan index
-        i = int(name[-1])
         
-        self.printer.fans[i] = self
+        if self.options["chip"] == 'PCA9685':
+            self.chip = PWM_PCA9685(int(self.channel))
+        elif self.options["chip"] == 'AM335':
+            self.chip = PWM_AM335(self.channel, 100, 0.0)   
+        
         self.max_value = 1.0
-        
         self.counter += 1
             
+        printer.fans.append(self)     
         return
         
     def connect(self, units):
@@ -85,10 +85,10 @@ class Fan(Unit):
     def set_value(self, value):
         """ Set the amount of on-time from 0..1 """
         self.value = value
-        if self.options["chip"] == Fan.PCA9685:
+        if self.options["chip"] == 'PCA9685':
             PWM_PCA9685.set_value(value, self.channel)
-        elif self.options["chip"] == Fan.AM335:
-            PWM_PCA9685.set_value(value, self.channel)
+        elif self.options["chip"] == 'AM335':
+            PWM_AM335.set_value(value)    
         return
 
 

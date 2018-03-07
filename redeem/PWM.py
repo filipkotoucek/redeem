@@ -128,7 +128,7 @@ class PWM_AM335(object):
         self.set_value(duty_cycle)
         
     def export_chip(self, chip, channel):
-        self.base = "/sys/class/pwm/pwmchip{}/pwm-{}:{}".format(chip, chip, channel)
+        self.base = "/sys/class/pwm/pwmchip{}/pwm{}".format(chip, channel)
         if not os.path.exists(self.base):
             with open("/sys/class/pwm/pwmchip{}/export".format(chip), "w") as f:
                 f.write(str(channel))

@@ -181,7 +181,7 @@ class PruFirmware:
         obj_output = os.path.splitext(output)[0] + ".obj"
         elf_output = os.path.splitext(output)[0] + ".elf"
 
-        compile_cmd = [self.compiler, '-v3', '-O3', '--hardware_mac=on', '--endian=little', '-I/usr/src/pru-software-support-package/include/am335x',
+        compile_cmd = [self.compiler, '-v3', '-O3', '--hardware_mac=on', '--endian=little', '-I/usr/lib/ti/pru-software-support-package/include/am335x',
                    '-I/usr/share/ti/cgt-pru/include', '--obj_directory', '/tmp', input]
 
         logging.debug("Compiling firmware with " + ' '.join(compile_cmd))
@@ -342,7 +342,7 @@ class PruFirmware:
             configFile.write("#define END_STOP_DELAY " +str(end_stop_delay)+ "\n")
                         
             # Note that these are all cycle counts of the 200MHz PRU - 1 cycle is 5ns
-            if self.printer.config.board_name == "Revolve": # TMC2130
+            if (self.printer.config.board_name == "Revolve") or (self.printer.config.board_name == "Prusa Pro"): # TMC2130
                 #assume internal clock of 14MHz, which means we need max(~85, t_clk+20). t_clk+20 is ~91.43, which we round up for safety
                 configFile.write("#define DELAY_BETWEEN_DIR_AND_STEP 4\n") # t_DSU in the spec sheet
                 configFile.write("#define DELAY_BETWEEN_STEP_AND_CLEAR 5\n") # t_SH in the spec sheet - 
