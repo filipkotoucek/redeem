@@ -224,7 +224,6 @@ class Heater(Unit):
                 self.temperatures[:-max(int(60/sleep), self.avg)] = [] # Keep only this much history
 
                 # Run safety checks
-
                 if not self.heater_error:
                     self.check_temperature_error()
 
@@ -244,6 +243,7 @@ class Heater(Unit):
         
         for s in self.safety:
             s.set_min_temp_enabled(self.min_temp_enabled)
+            #check if temperature trend is in given limits  
             s.run_safety_checks()
             
     def __str__(self):

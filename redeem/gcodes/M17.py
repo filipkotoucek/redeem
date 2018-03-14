@@ -18,7 +18,7 @@ class M17(GCodeCommand):
     def execute(self, g):
         self.printer.path_planner.wait_until_done()
         for name, stepper in iteritems(self.printer.steppers):
-            if self.printer.config.getboolean('Steppers', 'in_use_' + name):
+            if self.printer.config.getboolean('Steppers', 'in_use_' + name.lower()):
                 stepper.set_enabled()
 
     def get_description(self):

@@ -6,9 +6,12 @@ from redeem.Gcode import Gcode
 
 import logging
 
+#configs = "/usr/src/redeem/configs"
+configs = "/etc/redeem"
+
 def test_redeem():
-    r = Redeem("/usr/src/redeem/configs")
-    r.printer.enable.set_enabled()
+    r = Redeem(configs)
+    #r.printer.enable.set_enabled()
     g = r.printer.processor
     for gcode in g.get_test_gcodes():
         logging.info("Testing '"+gcode.message+"'")
@@ -18,16 +21,16 @@ def test_redeem():
 
 
 def test_load():
-    r = Redeem("/usr/src/redeem/configs")
+    r = Redeem(configs)
     r.exit()
 
 def test_run():
     from redeem.Redeem import main
-    main("/usr/src/redeem/configs")
+    main(configs)
     
 def test_code(test_str):
-    r = Redeem("/usr/src/redeem/configs")
-    r.printer.enable.set_enabled()
+    r = Redeem(configs)
+    #r.printer.enable.set_enabled()
     g = r.printer.processor
     for line in test_str.splitlines():
         if line:
@@ -37,8 +40,8 @@ def test_code(test_str):
     r.exit()
     
 def test_file(test):
-    r = Redeem("/usr/src/redeem/configs")
-    r.printer.enable.set_enabled()
+    r = Redeem(configs)
+    #r.printer.enable.set_enabled()
     g = r.printer.processor
     f = open(test,'r')
     for line in f.readlines():

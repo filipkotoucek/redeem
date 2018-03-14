@@ -311,6 +311,9 @@ class Safety(Unit):
             self. start_heating_time = time.time()
         heating_time = current_time - self.start_heating_time
         
+        if heating_time > self.min_rise_delay:
+            atest = 1
+            
         # Check that temperature is not rising too quickly
         if temp_rate > self.max_rise_rate:
             a = Alarm(Alarm.HEATER_RISING_FAST, 
@@ -519,9 +522,11 @@ class OnOffControl(Control):
         """ return the current value """
         value = self.input.get_value()
         
-        if value <= (self.target_value + self.on_offset):
+        #if value (temp) is bigger than on_treshold return max value
+        if value >= (self.target_value + self.on_offset):
             self.value = self.max_value
-        elif value >= (self.target_value + self.off_offset):
+        #if value (temp) is smaller than off_treshold return max value
+        elif value <= (self.target_value + self.off_offset):
             self.value = self.off_value
         
         return self.value

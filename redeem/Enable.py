@@ -26,6 +26,13 @@ class Enable:
     def __init__(self, pin, inverted=True):
         self.pin = pin
         self.inverted = inverted
+        self.base = "/sys/class/gpio/export"
+        
+        #make given pins accessable by exporting them 
+        with open(self.base, "w") as f:
+                f.write(str(self.pin))
+        if not os.path.exists(self.base):
+            logging.warning("Unable to export GPIO pin")
 
     def set_enabled(self):
         with open("/sys/class/gpio/{}/value".format(self.pin), "w") as f:

@@ -22,9 +22,9 @@ License: GNU GPL v3: http://www.gnu.org/copyleft/gpl.html
  You should have received a copy of the GNU General Public License
  along with Redeem.  If not, see <http://www.gnu.org/licenses/>.
 """
-
+import sys
+sys.path.append(r'/home/debian/pysrc')
 import pydevd
-from _curses import error
 pydevd.settrace('192.168.7.1')
 
 import glob
@@ -202,12 +202,14 @@ class Redeem:
         printer.watchdog = Watchdog()
 
         # Enable PWM and steppers
+        #TODO control pin to enable high power circuit 
+        '''
         try:
             printer.enable
             printer.enable.set_disabled()
         except AttributeError:
             logging.warning("Enable pin error: %s" % AttributeError)
-            
+        '''    
         # Init the Paths
         printer.axis_config = printer.config.getint('Geometry', 'axis_config')
 
@@ -431,8 +433,8 @@ class Redeem:
         # define the inputs/outputs available on this board
         # also define those that are NOT available (for later use)
         exclude = []
-        heaters = ["E", "H"]
-        extra = ["A", "B", "C", "HBP", '2', '3']
+        heaters = ["E", "HBP"]
+        extra = ["A", "B", "C", "H", '2', '3']
         if printer.config.addon_rev == "00A0":
             heaters.extend(extra)
         else:
@@ -764,8 +766,8 @@ class Redeem:
 
         if self.printer.config.getboolean('Watchdog', 'enable_watchdog'):
             self.printer.watchdog.start()
-
-        self.printer.enable.set_enabled()
+        
+        #self.printer.enable.set_enabled()
 
         # Signal everything ready
         logging.info("Redeem ready")
@@ -826,12 +828,12 @@ class Redeem:
             logging.debug("closing "+name)
             comm.close()
 
-        self.printer.enable.set_disabled()
+        #self.printer.enable.set_disabled()
         self.printer.swd.stop()
         Alarm.executor.stop()
         Key_pin.listener.stop()
         self.printer.watchdog.stop()
-        self.printer.enable.set_disabled()
+        #self.printer.enable.set_disabled()
 
         # list all threads that are still running
         # note: some of these maybe daemons

@@ -86,9 +86,9 @@ class Fan(Unit):
         """ Set the amount of on-time from 0..1 """
         self.value = value
         if self.options["chip"] == 'PCA9685':
-            PWM_PCA9685.set_value(value, self.channel)
+            self.chip.set_value(value, self.channel)
         elif self.options["chip"] == 'AM335':
-            PWM_AM335.set_value(value)    
+            self.chip.set_value(value)    
         return
 
 
