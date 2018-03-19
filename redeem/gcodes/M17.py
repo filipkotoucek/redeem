@@ -11,11 +11,12 @@ from __future__ import absolute_import
 
 from .GCodeCommand import GCodeCommand
 from six import iteritems
-
+import logging
 
 class M17(GCodeCommand):
 
     def execute(self, g):
+        logging.debug("Execute M17")
         self.printer.path_planner.wait_until_done()
         for name, stepper in iteritems(self.printer.steppers):
             if self.printer.config.getboolean('Steppers', 'in_use_' + name.lower()):

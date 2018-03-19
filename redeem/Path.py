@@ -281,7 +281,7 @@ class RelativePath(Path):
         self.start_pos = prev.end_pos
 
         # Generate the vector
-        vec = np.zeros(self.printer.MAX_AXES, dtype=Path.DTYPE)
+        vec = np.zeros(self.prev.printer.MAX_AXES, dtype=Path.DTYPE)
         for index, axis in enumerate(self.printer.AXES):
             if axis in self.axes:
                 vec[index] = self.axes[axis]

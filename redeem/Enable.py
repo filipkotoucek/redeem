@@ -20,6 +20,7 @@ License: GNU GPL v3: http://www.gnu.org/copyleft/gpl.html
  You should have received a copy of the GNU General Public License
  along with Redeem.  If not, see <http://www.gnu.org/licenses/>.
 """
+import logging
 
 class Enable:
 
@@ -28,18 +29,24 @@ class Enable:
         self.inverted = inverted
         self.base = "/sys/class/gpio/export"
         
-        #make given pins accessable by exporting them 
-        with open(self.base, "w") as f:
+        #make given pins accessable by exporting them
+        try:
+            with open(self.base, "w") as f:
                 f.write(str(self.pin))
-        if not os.path.exists(self.base):
+                f.close()
+        except IOError:
             logging.warning("Unable to export GPIO pin")
+            
+        with open("/sys/class/gpio/gpio{}/direction".format(self.pin), "w") as f:
+            f.write("out")
+            f.close()
 
     def set_enabled(self):
-        with open("/sys/class/gpio/{}/value".format(self.pin), "w") as f:
+        with open("/sys/class/gpio/gpio{}/value".format(self.pin), "w") as f:
             f.write("{}\n".format(int(not self.inverted)))
 
     def set_disabled(self):
-        with open("/sys/class/gpio/{}/value".format(self.pin), "w") as f:
+        with open("/sys/class/gpio/gpio{}/value".format(self.pin), "w") as f:
             f.write("{}\n".format(int(self.inverted)))
 
 

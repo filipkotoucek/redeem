@@ -22,10 +22,6 @@ License: GNU GPL v3: http://www.gnu.org/copyleft/gpl.html
  You should have received a copy of the GNU General Public License
  along with Redeem.  If not, see <http://www.gnu.org/licenses/>.
 """
-import sys
-sys.path.append(r'/home/debian/pysrc')
-import pydevd
-pydevd.settrace('192.168.7.1')
 
 import glob
 import logging
@@ -40,7 +36,7 @@ import Queue
 import numpy as np
 import sys, traceback
 
-from    Mosfet import Mosfet
+from Mosfet import Mosfet
 from Stepper import *
 from Stepper_TMC2130 import TMC2130
 from TemperatureSensor import *
@@ -191,7 +187,7 @@ class Redeem:
         #TODO edit config to contain info such as axis number
         elif printer.config.board_name == "Prusa Pro":
             Printer.NUM_AXES = 4
-            #printer.enable = Enable("gpio18", False)
+            printer.enable = Enable("48", True)
         if printer.config.addon_name == "Reach":
             if printer.config.addon_rev == "00A0":
                 Printer.NUM_AXES = 8
@@ -202,14 +198,13 @@ class Redeem:
         printer.watchdog = Watchdog()
 
         # Enable PWM and steppers
-        #TODO control pin to enable high power circuit 
-        '''
+        #TODO control pin to enable high power circuit  
         try:
             printer.enable
             printer.enable.set_disabled()
         except AttributeError:
             logging.warning("Enable pin error: %s" % AttributeError)
-        '''    
+            
         # Init the Paths
         printer.axis_config = printer.config.getint('Geometry', 'axis_config')
 
@@ -767,7 +762,7 @@ class Redeem:
         if self.printer.config.getboolean('Watchdog', 'enable_watchdog'):
             self.printer.watchdog.start()
         
-        #self.printer.enable.set_enabled()
+        self.printer.enable.set_enabled()
 
         # Signal everything ready
         logging.info("Redeem ready")
@@ -828,12 +823,12 @@ class Redeem:
             logging.debug("closing "+name)
             comm.close()
 
-        #self.printer.enable.set_disabled()
+        self.printer.enable.set_disabled()
         self.printer.swd.stop()
         Alarm.executor.stop()
         Key_pin.listener.stop()
         self.printer.watchdog.stop()
-        #self.printer.enable.set_disabled()
+        self.printer.enable.set_disabled()
 
         # list all threads that are still running
         # note: some of these maybe daemons

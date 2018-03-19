@@ -73,17 +73,19 @@
                     0x07C 0x07 // P8_26      = Dir_x        = GPIO1_29
                     0x02C 0x07 // P8_17 (6)  = STEP_X       = GPIO0_27
                                             
-                    0x020 0x07 // P8_19 (25) = Dir_y        = GPIO0_22
+                    //0x020 0x07 // P8_19 (25) = Dir_y        = GPIO0_22
+                    0x1a4 0x07 // P9_27 = Dir_y        = GPIO3_19
                     0x030 0x07 // P8_12 (23) = Step_y       = GPIO1_12
                                        
                     0x028 0x07 // P8_14 (5)  = DIR_Z        = GPIO0_26
-                    0x024 0x07 // P8_13 (24) = Step_z       = GPIO0_23
+                    //0x024 0x07 // P8_13 (24) = Step_z       = GPIO0_23
+                    0x090 0x07 // P8_07  = Step_z       = GPIO2_2
                     
                     0x03C 0x07 // P8_15 (4)  = DIR_E    	= GPIO1_15
                     0x078 0x07 // P9_12      = step E       = GPIO1_28
                     
                     //0x038 0x07 // P8_16 (3)  = DIR_H      = GPIO1_14
-                    //0x034 0x07 // P8_11 (22) = step_H    	= GPIO1_13  
+                    //0x034 0x07 // P8_11 (22) = step_H    	= GPIO1_13 
                 >;
             };		
 
@@ -99,15 +101,19 @@
 
             end_stop_pins: pinmux_end_stop_pins{
                 pinctrl-single,pins = <
-                    //0x1AC 0x37 // P9_25 = End stop X1  = GPIO3_21
                     0x180 0x37 // P9_26 = End stop X1  = GPIO0_14
                     0x070 0x37 // P9_11 = End stop X2  = GPIO0_30
+                    
                     0x044 0x37 // P9_23 = End stop Y1  = GPIO1_17
-                    0x074 0x37 // P9_13 = End stop Z1  = GPIO0_31
-                    //0x17c 0x37 // P9_18 = End stop Z2  = GPIO0_13
-                    0x038 0x37 // P8_16 = End stop Z2  = GPIO1_14
-                    //0x19C 0x37 // P9_28 = End stop Y2  = GPIO3_17
                     0x034 0x37 // P8_11 = End stop Y2  = GPIO1_13
+                    
+                    0x074 0x37 // P9_13 = End stop Z1  = GPIO0_31
+                    0x038 0x37 // P8_16 = End stop Z2  = GPIO1_14
+                    
+                    //0x17c 0x37 // P9_18 = End stop Z2  = GPIO0_13 
+                    //0x19C 0x37 // P9_28 = End stop Y2  = GPIO3_17
+                    //0x1AC 0x37 // P9_25 = End stop X1  = GPIO3_21
+                    
                 >;
             };
             //dallas_w1_pins: pinmux_dallas_w1_pins {
@@ -133,6 +139,12 @@
                 pinctrl-single,pins = <
                     0x20 0x04 /* (U10) ( PIN_OUTPUT | MUX_MODE4 )gpmc_ad8.ehrpwm2A */
                     0x24 0x04 /* (T10) ( PIN_OUTPUT | MUX_MODE4 )gpmc_ad9.ehrpwm2B */
+                >;
+            };
+            
+            stepper_enable_pins: pinmux_stepper_enable_pins {
+                pinctrl-single,pins = <         
+                    0x040 0x07 // P9_15      = DRV_EN       = GPIO1_16
                 >;
             };
 
@@ -194,18 +206,19 @@
             stepper_y{
                 pin-names 	= "Replic:pru-step_y", "Replic:pru-dir_y";		
                 gpios 		=<&gpio1 12 0
-		                 	  &gpio0 22 0>; 
+		                 	  &gpio3 19 0>; 
             };
             stepper_z{
                 pin-names 	= "Replic:pru-step_z", "Replic:pru-dir_z";		
-                gpios 		= <&gpio0 23 0
+                //gpios 		= <&gpio0 23 0
+                gpios       = <&gpio2 2 0
 		                 	   &gpio0 26 0>; 
             };
             stepper_ext_1{
                 pin-names 	= "Replic:pru-step_ext_1", "Replic:pru-dir_ext_1";		
                 gpios 		= <&gpio1 28 0
 		                 	   &gpio1 15 0>; 
-            };
+            };                   
             /*
             stepper_ext_2{
                 pin-names 	= "Replic:pru-step_ext_2", "Replic:pru-dir_ext_2";		
@@ -227,6 +240,7 @@
                 pinctrl-names = "default";
                 pinctrl-0 = <&end_stop_pins>;
                 pinctrl-1 = <&stepper_fault_pins>;
+                pinctrl-2 = <&stepper_enable_pins>;
                 #address-cells = <1>;
                 #size-cells = <0>;
 
@@ -326,6 +340,13 @@
             //	pinctrl-0       = <&servo_pins>;
             //	/*pinctrl-0       = <&clkout2_pins>;*/
             //};
+            stepper_enable {
+                compatible      = "bone-pinmux-helper";
+                status          = "okay";
+                pinctrl-names   = "default";
+                pinctrl-0       = <&stepper_enable_pins>;
+                /*pinctrl-0       = <&clkout2_pins>;*/
+            };
         };
     };
 

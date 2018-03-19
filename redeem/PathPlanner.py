@@ -452,7 +452,7 @@ class PathPlanner:
     def add_path(self, new):
         """ Add a path segment to the path planner """
         """ This code, and the native planner, needs to be updated for reach. """
-        # Link to the previous segment in the chain    
+        # Link to the previous segment in the chain   
         new.set_prev(self.prev)
         
         # NOTE: printing the added path slows things down SIGNIFICANTLY
