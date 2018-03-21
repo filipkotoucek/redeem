@@ -307,12 +307,16 @@ class Safety(Unit):
         power_on = self.heater.mosfet.get_power() > 0
         
         # track when the heater was first turned on
-        if target_temp == 0.0:
-            self. start_heating_time = time.time()
-        heating_time = current_time - self.start_heating_time
+        #if target_temp == 0.0:
+        #    self. start_heating_time = time.time()
+        #heating_time = current_time - self.start_heating_time
         
+        #apply min_rise_delay time after every temperature change. Not only from 0 to XX
+        heating_time = current_time - self.heater.temp_changed_time
+        
+        #reset the target_temp_change flag. Considered as 
         if heating_time > self.min_rise_delay:
-            atest = 1
+            atest = 1   
             
         # Check that temperature is not rising too quickly
         if temp_rate > self.max_rise_rate:

@@ -18,7 +18,7 @@ class M560(GCodeCommand):
 
     def execute(self, g):
         if g.num_tokens() == 0:
-            g.set_answer("ok "+", ".join([stepper.get_capabilities() for name,stepper in sorted(self.printer.steppers.iteritems())]))            
+            g.set_answer("ok "+", ".join([stepper.get_capabilities() for name,stepper in sorted(self.printer.steppers.iteritems())]))         
         else:
             answer = "ok "
             for i in range(g.num_tokens()):  # Run through all tokens

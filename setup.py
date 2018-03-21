@@ -58,7 +58,7 @@ pathplanner = Extension(
         '-DBUILD_PYTHON_EXT=1',
         '-Wno-write-strings',
         '-Wno-maybe-uninitialized',
-        '-DDEBUG=1',
+        #'-DDEBUG=1',
         '-DLOGLEVEL=10']
 )
 

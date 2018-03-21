@@ -25,8 +25,8 @@ import time
 import logging
 from Printer import Printer
 from DAC import DAC, PWM_DAC
-#from ShiftRegister import ShiftRegister
-#import Adafruit_BBIO.GPIO as GPIO
+from ShiftRegister import ShiftRegister
+import Adafruit_BBIO.GPIO as GPIO
 from threading import Thread
 from Alarm import Alarm
 from Key_pin import Key_pin
@@ -60,9 +60,10 @@ class Stepper(object):
         # Set up the GPIO pins - we just have to initialize them so the PRU can flip them
         # terrible hack to cover a bug in Adafruit
         dir_name = "EHRPWM2A" if dir_pin == "GPIO0_22" else dir_pin
-
+        step_name = "P9_31" if step_pin == "GPIO3_14" else step_pin
+        
         GPIO.setup(dir_name, GPIO.OUT)
-        GPIO.setup(step_pin, GPIO.OUT)
+        GPIO.setup(step_name, GPIO.OUT)
 
         # Add a key code to the key listener
         # Steppers have an nFAULT pin, so callback on falling
@@ -104,9 +105,6 @@ class Stepper(object):
 
     def get_direction(self):
         return self.direction
-
-    def get_capabilities(self):
-        return "Not implemented for {}\n".format(self.name)
 
     @staticmethod
     def commit():
@@ -275,10 +273,6 @@ class Stepper_00B2(Stepper_00B1):
         elif self.name == "H":
             ShiftRegister.registers[4].remove_state(0x1)
         self.enabled = True
-        
-    def reset(self):
-        self.set_disabled()
-        self.set_enabled()
 
 class Stepper_00B3(Stepper_00B2):
 
@@ -339,12 +333,6 @@ class Stepper_00B3(Stepper_00B2):
             return
         self.set_current_value(self.current_enable_value)
         self.current_enabled = True
-        
-    def reset(self):
-        self.set_disabled()
-        self.set_current_disabled()
-        self.set_enabled()
-        self.set_current_enabled()
         
 
 """

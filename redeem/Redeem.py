@@ -779,11 +779,11 @@ class Redeem:
                     gcode = queue.get(block=True, timeout=1)
                 except Queue.Empty:
                     continue
-                logging.debug("Executing "+gcode.code()+" from "+name + " " + gcode.message)
+                #logging.debug("Executing "+gcode.code()+" from "+name + " " + gcode.message)
                 self._execute(gcode)
                 self.printer.reply(gcode)
                 queue.task_done()
-                logging.debug("Completed "+gcode.code()+" from "+name + " " + gcode.message)
+                #logging.debug("Completed "+gcode.code()+" from "+name + " " + gcode.message)
         except Exception:
             logging.exception("Exception in {} loop: ".format(name))
 

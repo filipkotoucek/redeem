@@ -1,8 +1,8 @@
 from redeem.Redeem import Redeem
 import sys
 import signal
-sys.path.append(r'/home/debian/pysrc')
 
+sys.path.append(r'/home/debian/pysrc')
 import pydevd
 pydevd.settrace('192.168.7.1')
 
@@ -37,5 +37,4 @@ def run_redeem():
 if __name__ == "__main__": 
     
     run_redeem()
-    
     print "Redeem finished"

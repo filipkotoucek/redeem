@@ -48,7 +48,7 @@ class M116(GCodeCommand):
 
         while True:
             all_ok[0] |= self.printer.heaters['E'].is_target_temperature_reached()
-            all_ok[1] |= self.printer.heaters['H'].is_target_temperature_reached()
+            #all_ok[1] |= self.printer.heaters['H'].is_target_temperature_reached()
             all_ok[2] |= self.printer.heaters['HBP'].is_target_temperature_reached()
 
             if self.printer.config.addon_name:

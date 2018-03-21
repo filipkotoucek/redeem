@@ -53,8 +53,8 @@ class Heater(Unit):
         if "input" in self.options:
             self.input = self.options["input"]
 
+        self.temp_changed_time = time.time() 
         self.heater_error = False
-        
         self.temperatures = []
         
         # add to printer
@@ -126,6 +126,7 @@ class Heater(Unit):
     def set_target_temperature(self, temp):
         """ Set the target temperature of the controller """
         self.min_temp_enabled = False
+        self.temp_changed_time = time.time() 
         self.input.set_target_value(temp)
 
     def get_temperature(self):

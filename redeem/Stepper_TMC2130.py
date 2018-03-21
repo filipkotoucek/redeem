@@ -147,8 +147,8 @@ class TMC2130(Stepper):
         self.seup     = 0 # current up step width
         self.semin    = 1 # minimum stallGuard2 value for smart current
 
-        self.ihold    = 3 # Hold current 
-        self.irun     = 8 # Run current
+        self.ihold    = 30#3 # Hold current 
+        self.irun     = 30#8 # Run current
         self.ihold_delay = 10 # Delay before going to hold current
 
         self.thigh = 0#(1<<18)

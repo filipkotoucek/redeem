@@ -35,8 +35,8 @@ pathplanner = Extension('_PathPlannerNative',
         '-Wno-write-strings', 
         '-Wno-maybe-uninitialized', 
         '-Wno-format',
-        '-DQUEUE_DEBUG=1',
-        '-DDEBUG=1',
+        #'-DQUEUE_DEBUG=1',
+        #'-DDEBUG=1',
         '-DLOGLEVEL=10'])
 
 setup(name='PathPlannerNative',
